@@ -1,0 +1,27 @@
+# Local model downloads and generated checkpoints
+models/
+adapters/
+*.gguf
+*.safetensors
+*.bin
+*.pt
+*.pth
+
+# Generated/private corpus material and evaluation output
+data/*.jsonl
+data/manifest.json
+data/correction/
+openclaw_capability/data/
+openclaw_capability/data_clickclack_correction/
+openclaw_capability/reports/
+
+# Local Python and OS files
+__pycache__/
+*.py[cod]
+.DS_Store
+.venv/
+venv/
+*.log
+
+# Local Ollama files contain machine-specific absolute model paths
+Modelfile*

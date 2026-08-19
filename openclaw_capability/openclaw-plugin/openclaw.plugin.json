@@ -1,0 +1,16 @@
+{
+  "id": "sacred-harp-openclaw",
+  "contracts": {
+    "tools": ["sacred_harp_search"]
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "baseUrl": {
+        "type": "string",
+        "description": "Local Sacred Harp provider URL"
+      }
+    }
+  }
+}
