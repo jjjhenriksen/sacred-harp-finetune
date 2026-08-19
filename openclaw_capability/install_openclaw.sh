@@ -9,13 +9,15 @@ PYTHON=${SACRED_HARP_PYTHON:-${PROJECT}/../sacred_harp_finetune_venv/bin/python}
 SERVER=${HERE}/sacred_harp_openclaw_server.py
 PLUGIN=${HERE}/openclaw-plugin
 MODEL_REF=sacred-harp-local/sacred-harp-1b-openclaw
+ADAPTER=${SACRED_HARP_ADAPTER:-${ROOT}/adapters/sacred_harp_1b_lora_openclaw_v3_interpretation}
 CLICKCLACK_CONTROLLER_ID=${CLICKCLACK_SACREDHARP_CONTROLLER_USER_ID:-usr_01kynetng1rgcetj04pfq3pzew}
 OPENCLAW_CONFIG=${OPENCLAW_CONFIG_PATH:-${HOME}/.openclaw/openclaw.json}
 
 [[ -x "$PYTHON" ]] || { print -ru2 "Missing Python runtime: $PYTHON"; exit 1; }
 [[ -f "$SERVER" ]] || { print -ru2 "Missing provider server: $SERVER"; exit 1; }
-[[ -f "${ROOT}/adapters/sacred_harp_1b_lora_openclaw_v2/adapters.safetensors" ]] || {
+[[ -f "${ADAPTER}/adapters.safetensors" ]] || {
   print -ru2 "The OpenClaw adapter has not been trained yet."
+  print -ru2 "Expected: ${ADAPTER}/adapters.safetensors"
   exit 1
 }
 

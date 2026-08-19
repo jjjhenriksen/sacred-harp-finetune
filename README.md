@@ -39,6 +39,9 @@ rate.
 The vault-linked retrain is stored at
 `adapters/sacred_harp_1b_lora_vault/adapters.safetensors`. The existing
 `adapters/sacred_harp_1b_lora_corrected` directory is preserved as a fallback.
+The final OpenClaw presentation path uses the local base model at
+`models/llama-1b` with
+`adapters/sacred_harp_1b_lora_openclaw_v3_interpretation`.
 
 ## Evaluate
 

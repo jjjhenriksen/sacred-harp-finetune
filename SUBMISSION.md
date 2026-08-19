@@ -16,6 +16,12 @@ Those files are large, machine-specific, or private. A reviewer can inspect
 the implementation and reproduce the pipeline with a local model and source
 snapshot by following `README.md` and `vault_reproduction/README.md`.
 
+Keep these local artifacts for the live demo:
+
+- `models/llama-1b/`
+- `adapters/sacred_harp_1b_lora_openclaw_v3_interpretation/`
+- the generated local Sacred Harp RAG source/index used by the provider.
+
 Before submitting, run:
 
 ```zsh
