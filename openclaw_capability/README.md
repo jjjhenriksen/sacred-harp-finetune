@@ -14,8 +14,8 @@ denies shell, filesystem, web, scheduler, gateway, and subagent tools.
 ## Train and evaluate
 
 ```zsh
-cd /Users/jacquelinehenriksen/CPSC298-LocalLLM
-./sacred_harp_finetune/openclaw_capability/train_openclaw_capability.sh
+cd /path/to/sacred_harp_finetune
+./openclaw_capability/train_openclaw_capability.sh
 ```
 
 The source adapter is
@@ -82,8 +82,8 @@ This path requires the Sacred Harp provider and its local RAG service. If the
 provider is not already running, start it in a separate terminal:
 
 ```zsh
-/Users/jacquelinehenriksen/CPSC298-LocalLLM/sacred_harp_finetune_venv/bin/python \
-  /Users/jacquelinehenriksen/CPSC298-LocalLLM/sacred_harp_finetune/openclaw_capability/sacred_harp_openclaw_server.py \
+python3 \
+  openclaw_capability/sacred_harp_openclaw_server.py \
   --host 127.0.0.1 --port 18991
 ```
 
@@ -91,7 +91,7 @@ For the complete local preflight, which starts the provider when necessary and
 checks model selection, tool use, configuration, and ClickClack account health:
 
 ```zsh
-cd /Users/jacquelinehenriksen/CPSC298-LocalLLM/sacred_harp_finetune/openclaw_capability
+cd /path/to/sacred_harp_finetune/openclaw_capability
 ./verify_openclaw.sh
 ```
 

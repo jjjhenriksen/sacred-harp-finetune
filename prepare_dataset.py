@@ -6,14 +6,12 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 from pathlib import Path
 
 
-DEFAULT_VAULT_ROOT = Path(
-    "/Users/jacquelinehenriksen/Library/Mobile Documents/"
-    "iCloud~md~obsidian/Documents/General/05 Music/shape-note"
-)
+DEFAULT_VAULT_ROOT = Path(os.environ.get("SACRED_HARP_VAULT_ROOT", "."))
 SYSTEM_PROMPT = (
     "You are a careful Sacred Harp reference assistant. Answer from the "
     "provided corpus. Preserve book names, editions, song numbers, tune "

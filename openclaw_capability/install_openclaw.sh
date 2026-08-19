@@ -4,11 +4,13 @@ set -euo pipefail
 HERE=${0:A:h}
 ROOT=${HERE:h}
 PROJECT=${ROOT:h}
-PYTHON=${PROJECT}/sacred_harp_finetune_venv/bin/python
+PYTHON=${SACRED_HARP_PYTHON:-${PROJECT}/../sacred_harp_finetune_venv/bin/python}
+[[ -x "$PYTHON" ]] || PYTHON=${SACRED_HARP_PYTHON:-$(command -v python3)}
 SERVER=${HERE}/sacred_harp_openclaw_server.py
 PLUGIN=${HERE}/openclaw-plugin
 MODEL_REF=sacred-harp-local/sacred-harp-1b-openclaw
 CLICKCLACK_CONTROLLER_ID=${CLICKCLACK_SACREDHARP_CONTROLLER_USER_ID:-usr_01kynetng1rgcetj04pfq3pzew}
+OPENCLAW_CONFIG=${OPENCLAW_CONFIG_PATH:-${HOME}/.openclaw/openclaw.json}
 
 [[ -x "$PYTHON" ]] || { print -ru2 "Missing Python runtime: $PYTHON"; exit 1; }
 [[ -f "$SERVER" ]] || { print -ru2 "Missing provider server: $SERVER"; exit 1; }
@@ -20,9 +22,9 @@ CLICKCLACK_CONTROLLER_ID=${CLICKCLACK_SACREDHARP_CONTROLLER_USER_ID:-usr_01kynet
 # OpenClaw 2026.8.1's global `plugins install` path lacks an agent selector, so
 # register this trusted local plugin through the supported load-path config.
 PLUGIN_ALLOW=$(jq -c --arg id "sacred-harp-openclaw" \
-  '((.plugins.allow // []) + [$id]) | unique' /Users/jacquelinehenriksen/.openclaw/openclaw.json)
+  '((.plugins.allow // []) + [$id]) | unique' "$OPENCLAW_CONFIG")
 PLUGIN_PATHS=$(jq -c --arg path "$PLUGIN" \
-  '((.plugins.load.paths // []) + [$path]) | unique' /Users/jacquelinehenriksen/.openclaw/openclaw.json)
+  '((.plugins.load.paths // []) + [$path]) | unique' "$OPENCLAW_CONFIG")
 openclaw config set 'plugins.allow' "$PLUGIN_ALLOW" --strict-json --replace
 openclaw config set 'plugins.load.paths' "$PLUGIN_PATHS" --strict-json --replace
 
@@ -81,7 +83,7 @@ openclaw config set 'channels.clickclack.accounts.sacredharpbench.allowBots' \
   '"mentions"' --strict-json
 CLICKCLACK_ALLOW_FROM=$(jq -c --arg id "$CLICKCLACK_CONTROLLER_ID" \
   '((.channels.clickclack.accounts.sacredharpbench.allowFrom // ["*"]) + ["*", $id]) | unique' \
-  /Users/jacquelinehenriksen/.openclaw/openclaw.json)
+  "$OPENCLAW_CONFIG")
 openclaw config set 'channels.clickclack.accounts.sacredharpbench.allowFrom' \
   "$CLICKCLACK_ALLOW_FROM" --strict-json --replace
 

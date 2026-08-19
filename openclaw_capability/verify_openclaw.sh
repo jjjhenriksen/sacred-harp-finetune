@@ -4,10 +4,12 @@ set -euo pipefail
 HERE=${0:A:h}
 ROOT=${HERE:h}
 PROJECT=${ROOT:h}
-PYTHON=${PROJECT}/sacred_harp_finetune_venv/bin/python
+PYTHON=${SACRED_HARP_PYTHON:-${PROJECT}/../sacred_harp_finetune_venv/bin/python}
+[[ -x "$PYTHON" ]] || PYTHON=${SACRED_HARP_PYTHON:-$(command -v python3)}
 SERVER=${HERE}/sacred_harp_openclaw_server.py
 REPORTS=${HERE}/reports
 CLICKCLACK_CONTROLLER_ID=${CLICKCLACK_SACREDHARP_CONTROLLER_USER_ID:-usr_01kynetng1rgcetj04pfq3pzew}
+OPENCLAW_CONFIG=${OPENCLAW_CONFIG_PATH:-${HOME}/.openclaw/openclaw.json}
 mkdir -p "$REPORTS"
 
 SERVER_PID=""
@@ -61,7 +63,7 @@ jq -e --arg controller "$CLICKCLACK_CONTROLLER_ID" '
     .agentId == "sacredharpbench" and
     .match.channel == "clickclack" and
     .match.accountId == "sacredharpbench")
-' /Users/jacquelinehenriksen/.openclaw/openclaw.json >/dev/null
+' "$OPENCLAW_CONFIG" >/dev/null
 
 jq -n \
   --arg provider "$(jq -r '.result.meta.agentMeta.provider' "${REPORTS}/openclaw_agent_rag_smoke.json")" \

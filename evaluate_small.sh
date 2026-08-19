@@ -2,7 +2,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
-PYTHON="$ROOT/../sacred_harp_finetune_venv/bin/python"
+PYTHON="${SACRED_HARP_PYTHON:-$ROOT/../sacred_harp_finetune_venv/bin/python}"
+[[ -x "$PYTHON" ]] || PYTHON="${SACRED_HARP_PYTHON:-$(command -v python3)}"
 MODEL="$ROOT/models/llama-1b"
 ADAPTER="$ROOT/adapters/sacred_harp_1b_lora_corrected"
 

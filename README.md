@@ -28,7 +28,8 @@ The current generated manifest is in data/manifest.json.
 
 The environment is in the sibling virtualenv. Run:
 
-    /Users/jacquelinehenriksen/CPSC298-LocalLLM/sacred_harp_finetune_venv/bin/python prepare_dataset.py --output data
+    SACRED_HARP_VAULT_ROOT=/path/to/generated-obsidian-vault \
+      python3 prepare_dataset.py --output data
     ./train_small.sh
 
 The training script performs one pass over the training split, with eight LoRA
@@ -63,7 +64,7 @@ The raw command does not prove that OpenClaw, ClickClack, Docker, or
 The verified working artifact is the MLX adapter. To reproduce the fused
 checkpoint:
 
-    /Users/jacquelinehenriksen/CPSC298-LocalLLM/sacred_harp_finetune_venv/bin/python -m mlx_lm.fuse --model models/llama-1b --adapter-path adapters/sacred_harp_1b_lora_corrected --save-path models/sacred-harp-1b-finetuned-corrected-dequantized --dequantize
+    python3 -m mlx_lm.fuse --model models/llama-1b --adapter-path adapters/sacred_harp_1b_lora_corrected --save-path models/sacred-harp-1b-finetuned-corrected-dequantized --dequantize
 
 `TRAINING_RECEIPT.md` records the completed losses and verification results.
 The GGUF files are retained for investigation, but Ollama currently rejects

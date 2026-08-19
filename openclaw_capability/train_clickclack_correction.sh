@@ -3,7 +3,7 @@ set -euo pipefail
 
 HERE=${0:A:h}
 ROOT=${HERE:h}
-VENV=${ROOT:h}/sacred_harp_finetune_venv
+VENV=${SACRED_HARP_VENV:-${ROOT:h}/sacred_harp_finetune_venv}
 MODEL=${ROOT}/models/llama-1b
 SOURCE_ADAPTER=${ROOT}/adapters/sacred_harp_1b_lora_openclaw/adapters.safetensors
 OUTPUT_ADAPTER=${ROOT}/adapters/sacred_harp_1b_lora_openclaw_v2
