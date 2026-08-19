@@ -1,0 +1,5 @@
+beautifulsoup4>=4.12
+cloudscraper>=1.2.71
+PyYAML>=6.0
+pypdf>=6.0
+PyMuPDF>=1.24

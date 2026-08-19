@@ -11,6 +11,9 @@ documentation. Local model downloads, generated adapters, private corpus
 exports, and machine-specific reports are intentionally excluded from Git.
 Recreate those locally with the commands below.
 
+The vault-generation scripts and their portable rebuild entry point live in
+`vault_reproduction/README.md`.
+
 ## Corpus
 
 prepare_dataset.py reads the canonical Obsidian shape-note text hubs and song

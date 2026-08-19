@@ -25,3 +25,8 @@ venv/
 
 # Local Ollama files contain machine-specific absolute model paths
 Modelfile*
+
+# Rebuild outputs and local source snapshots
+vault_reproduction/work/
+vault_reproduction/sources/
+vault_reproduction/*.csv

@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sh-corpus"
+version = "0.1.0"
+description = "Sacred Harp stanza extraction, classification, and selection tools."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "beautifulsoup4>=4.12",
+  "cloudscraper>=1.2.71",
+  "PyYAML>=6.0",
+  "PyMuPDF>=1.24",
+]
+
+[project.scripts]
+sh-corpus = "sh_corpus.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
