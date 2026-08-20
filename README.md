@@ -14,6 +14,10 @@ Recreate those locally with the commands below.
 The vault-generation scripts and their portable rebuild entry point live in
 `vault_reproduction/README.md`.
 
+The final presentation is the self-contained deck in
+`presentation/sacred-harp-agent-final.html`; keep the HTML beside its two image
+assets when opening it locally.
+
 ## Corpus
 
 prepare_dataset.py reads the canonical Obsidian shape-note text hubs and song

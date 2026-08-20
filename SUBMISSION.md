@@ -3,6 +3,8 @@
 Use the GitHub repository or the generated ZIP as the source submission. It
 contains the implementation, tests, OpenClaw integration, vault-reproduction
 scripts, evaluation report, training receipt, and exact run instructions.
+It also contains the final HTML presentation at
+`presentation/sacred-harp-agent-final.html` with its image assets.
 
 The package intentionally does not contain:
 

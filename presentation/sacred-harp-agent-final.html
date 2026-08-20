@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>The Sacred Harp Agent</title>
+  <meta name="description" content="Final presentation: a local tool for searching a Sacred Harp collection.">
+  <style>
+    :root{--ink:#edf2e9;--muted:#b7c4bc;--faint:#7f9288;--forest:#0c1713;--panel:#12231c;--panel2:#172d24;--gold:#e3c483;--gold2:#c59c55;--line:rgba(227,196,131,.2);--serif:Georgia,'Times New Roman',serif;--sans:ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif}
+    *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--forest);color:var(--ink);font-family:var(--sans)}
+    body{overflow:hidden;background:radial-gradient(circle at 80% 10%,#1c3b2d 0,transparent 30%),linear-gradient(135deg,#0b1511,#10231b 65%,#0b1511)}
+    .deck{height:100svh;position:relative}.slide{position:absolute;inset:0;display:grid;align-content:center;padding:clamp(2rem,7vw,7rem) clamp(2rem,9vw,10rem);opacity:0;pointer-events:none;transform:translateX(2rem);transition:opacity .4s ease,transform .4s ease}.slide.active{opacity:1;pointer-events:auto;transform:none}
+    .slide:before{content:attr(data-number);position:absolute;top:clamp(1.5rem,4vw,3rem);left:clamp(2rem,9vw,10rem);font-size:.7rem;letter-spacing:.18em;color:var(--gold);font-weight:700}.slide:after{display:none}
+    .kicker{color:var(--gold);font-size:.78rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin:0 0 1.2rem}.eyebrow{color:var(--faint);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase}.slide h1,.slide h2{font-family:var(--serif);font-weight:400;letter-spacing:-.035em;line-height:.98;margin:0;color:#f4eedf}.slide h1{font-size:clamp(4rem,10vw,9.4rem);max-width:9ch}.slide h2{font-size:clamp(3rem,6vw,6.7rem);max-width:12ch}.lead{font-size:clamp(1.05rem,1.6vw,1.45rem);line-height:1.55;color:var(--muted);max-width:46rem;margin:1.6rem 0 0}.small{font-size:.88rem;line-height:1.6;color:var(--muted)}
+    .title{align-content:end;background:linear-gradient(135deg,rgba(32,75,57,.75),transparent 48%)}.title .rule{width:6rem;height:3px;background:var(--gold);margin:1.7rem 0}.title .meta{display:flex;gap:1rem;flex-wrap:wrap;color:var(--muted);font-size:.84rem;margin-top:2rem}.title .meta span{border-left:1px solid var(--line);padding-left:1rem}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;max-width:72rem;margin-top:2.5rem}.card{background:linear-gradient(145deg,rgba(227,196,131,.09),transparent 55%),rgba(7,18,14,.46);border:1px solid var(--line);padding:1.4rem 1.5rem;min-height:10rem}.card h3{font-family:var(--serif);font-weight:400;font-size:1.75rem;margin:.3rem 0 .65rem;color:#f4eedf}.card p{color:var(--muted);line-height:1.55;margin:0}.three{grid-template-columns:repeat(3,minmax(0,1fr))}.diagram{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:1.1rem;max-width:60rem;margin-top:2.5rem}.node{border:1px solid var(--line);background:var(--panel);padding:1.3rem}.node strong{display:block;color:var(--gold);margin-bottom:.4rem}.arrow{color:var(--gold);font-size:2rem}.square{width:min(42vw,24rem);height:min(42vw,24rem);border:2px solid var(--gold);display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2px;padding:1rem;position:relative;background:rgba(227,196,131,.04)}.square:after{content:'leader';position:absolute;inset:35%;display:grid;place-items:center;border:1px dashed var(--gold2);color:var(--gold);font-size:.75rem;letter-spacing:.1em;text-transform:uppercase}.square span{display:grid;place-items:center;background:rgba(227,196,131,.08);font-family:var(--serif);font-size:1.5rem}.square-wrap{display:flex;justify-content:center;align-items:center}.tag{display:inline-block;color:var(--gold);font-size:.7rem;letter-spacing:.13em;text-transform:uppercase;border:1px solid var(--line);padding:.35rem .55rem;margin-bottom:.6rem}.shapes{display:flex;gap:1rem;align-items:end;margin-top:2.3rem}.shape{width:7rem;text-align:center;color:var(--muted);font-size:.8rem}.shape i{display:block;width:4.4rem;height:4.4rem;background:var(--gold);margin:0 auto .7rem}.fa i{clip-path:polygon(50% 4%,96% 94%,4% 94%)}.sol i{border-radius:50%}.la i{border-radius:.4rem}.mi i{transform:rotate(45deg) scale(.72);margin-bottom:1rem}.quote{border-left:3px solid var(--gold);padding:1rem 1.5rem;max-width:44rem;margin-top:2.3rem;font:2rem/1.2 var(--serif);color:#f4eedf}.quote small{display:block;font: .75rem/1.4 var(--sans);color:var(--faint);margin-top:.7rem}.flow{display:flex;align-items:stretch;gap:0;margin-top:2.8rem;max-width:72rem}.flow .step{flex:1;padding:1.3rem;border:1px solid var(--line);background:rgba(7,18,14,.45)}.flow .step:not(:last-child){border-right:0}.step b{color:var(--gold);font-size:1.8rem;font-family:var(--serif);font-weight:400}.step strong{display:block;margin:.55rem 0;color:#f4eedf}.step p{margin:0;color:var(--muted);line-height:1.45;font-size:.9rem}.architecture{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;max-width:72rem;margin-top:2.5rem}.architecture .card{min-height:14rem}.architecture .card h3{font-size:1.5rem}.architecture .card ul{margin:0;padding-left:1rem;color:var(--muted);line-height:1.8}.closing{background:linear-gradient(135deg,rgba(44,91,69,.65),transparent 54%);align-content:center}.closing h2{max-width:13ch}.closing .lead{max-width:37rem}.controls{position:fixed;z-index:5;bottom:1.5rem;right:clamp(2rem,9vw,10rem);display:flex;align-items:center;gap:.7rem}.controls button{width:2.6rem;height:2.6rem;border:1px solid var(--line);background:rgba(7,18,14,.7);color:var(--ink);font-size:1.1rem;cursor:pointer}.controls button:hover,.controls button:focus-visible{border-color:var(--gold);color:var(--gold);outline:none}.progress{width:8rem;height:2px;background:rgba(227,196,131,.2)}.progress i{display:block;height:100%;background:var(--gold);width:0;transition:width .3s}.hint{position:fixed;bottom:1.85rem;left:clamp(2rem,9vw,10rem);font-size:.7rem;color:var(--faint);letter-spacing:.08em;text-transform:uppercase}.notes{position:absolute;left:-9999px}
+    .score-slide{align-content:start}.score-frame{margin-top:1.7rem;max-width:62rem;border:1px solid var(--line);background:#dfe9e5;padding:.65rem;box-shadow:0 1rem 3rem rgba(0,0,0,.25)}.score-frame img{display:block;width:100%;height:min(48svh,34rem);object-fit:contain;object-position:center;background:#fff}.score-caption{display:flex;justify-content:space-between;gap:1rem;padding:.7rem .25rem .15rem;color:#52645c;font-size:.74rem;line-height:1.35}.score-caption a{color:#405d50}.score-callout{color:var(--gold);font-size:.82rem;line-height:1.4;max-width:45rem;margin-top:1rem}
+    @media(max-width:760px){body{overflow:auto}.deck{height:auto;min-height:100svh}.slide{position:relative;min-height:100svh;padding:5.4rem 1.35rem 5.5rem;transform:none!important}.slide:before{left:1.35rem}.slide:after{right:1.35rem}.slide h2{font-size:clamp(2.7rem,14vw,4.5rem)}.grid,.three,.architecture,.stat-grid{grid-template-columns:1fr}.diagram{grid-template-columns:1fr;justify-items:center}.arrow{transform:rotate(90deg)}.square{width:15rem;height:15rem}.flow{display:grid}.flow .step:not(:last-child){border-right:1px solid var(--line);border-bottom:0}.controls{right:1.35rem}.hint{display:none}.shapes{gap:.4rem}.shape{width:23vw}.shape i{width:3.2rem;height:3.2rem}.score-frame img{height:18rem}}
+    .fa i{clip-path:polygon(6% 6%,94% 50%,6% 94%)}.square-diagram{display:block;width:min(42vw,28rem);height:auto;background:#fff}.slide[data-number="03"] > .small,.slide[data-number="04"] > .small,.score-callout,.closing > .small{display:none}.stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;max-width:72rem;margin-top:2rem}.stat{border-top:2px solid var(--gold);padding-top:.8rem}.stat-number{display:block;color:#f4eedf;font:2.8rem/1 var(--serif)}.stat-label{display:block;color:var(--muted);font-size:.78rem;line-height:1.35;margin-top:.45rem}.stats-divider{margin:2rem 0 1rem;border-top:1px solid var(--line);max-width:72rem}
+    @media(prefers-reduced-motion:reduce){.slide{transition:none}}
+  </style>
+</head>
+<body>
+  <main class="deck" aria-live="polite">
+    <section class="slide title active" data-number="01" aria-label="Title">
+      <p class="kicker">A final presentation</p><h1>The Sacred Harp Agent</h1><div class="rule"></div>
+      <p class="lead">A local search tool for a living singing tradition—and the collection behind it.</p>
+      <div class="meta"><span>Obsidian notes</span><span>Search index</span><span>Local tool</span></div>
+    </section>
+    <section class="slide" data-number="02" aria-label="What Sacred Harp is">
+      <p class="kicker">The tradition</p><h2>What is Sacred Harp?</h2>
+      <p class="lead">Sacred Harp is a group singing tradition from the United States. Singers use <em>The Sacred Harp</em>, a book of hymns and other songs. They sit in a square and sing together.</p>
+      <div class="grid three"><div class="card"><span class="tag">No audience</span><p>The singers make the music.</p></div><div class="card"><span class="tag">Many editions</span><p>The same text can appear in different books.</p></div><div class="card"><span class="tag">Shared leadership</span><p>Singers take turns leading songs.</p></div></div>
+      <details class="notes"><summary>Speaker note</summary>Basis: the earlier local Sacred Harp presentation, “Sacred Harp from the ground up.”</details>
+    </section>
+    <section class="slide" data-number="03" aria-label="The hollow square">
+      <p class="kicker">How singing works</p><h2>The hollow square</h2>
+      <div class="diagram"><div class="node"><strong>Four sections</strong><span class="small">Treble · Alto · Tenors · Basses</span></div><div class="arrow">→</div><div class="square-wrap"><img class="square-diagram" src="hollow-square-sacred-harp.webp" alt="Hollow square seating diagram: altos at the back, tenors at the front, basses on the left, and trebles on the right, all facing the center"></div></div>
+      <p class="small" style="max-width:48rem;margin-top:.7rem">Everyone faces inward. The leader stands in the middle and beats time. The geometry makes listening mutual: the sound is aimed at the square, not at a stage.</p>
+    </section>
+    <section class="slide" data-number="04" aria-label="Four shape notation">
+      <p class="kicker">How notation works</p><h2>Four shapes help people learn the notes.</h2>
+      <p class="lead">Each shape names a syllable: <strong>fa · sol · la · mi</strong>. Singers use the shapes to learn unfamiliar music.</p>
+      <div class="shapes"><div class="shape fa"><i></i><b>Fa</b></div><div class="shape sol"><i></i><b>Sol</b></div><div class="shape la"><i></i><b>La</b></div><div class="shape mi"><i></i><b>Mi</b></div></div>
+      <p class="small" style="margin-top:2rem">The shapes are a navigation system, not decoration: they help a singer enter unfamiliar music together with the room.</p>
+    </section>
+    <section class="slide score-slide" data-number="05" aria-label="Sheet music page">
+      <p class="kicker">A page from the repertoire</p><h2>264 · Night Song</h2>
+      <p class="small" style="max-width:48rem;margin-top:.9rem">A sheet-music page shows the title, meter, key, four parts, and text that the tool can search.</p>
+      <figure class="score-frame"><img src="264-night-song-score.jpg" alt="Sheet music for Sacred Harp 264 Night Song, showing the title, key, meter, notes, and first line of text"><figcaption class="score-caption"><span>264 “Night Song” · F♯ minor · L.M.D.</span><a href="https://sacredharpbremen.org/264-night-song/">Source: Sacred Harp Bremen</a></figcaption></figure>
+    </section>
+    <section class="slide omit" data-number="05" aria-label="A song begins">
+      <p class="kicker">The room in motion</p><h2>How a tune starts</h2>
+      <div class="flow"><div class="step"><b>1</b><strong>Call the page</strong><p>A leader chooses a tune and announces its number.</p></div><div class="step"><b>2</b><strong>Set the pitch</strong><p>Someone gives the starting notes so the room can enter.</p></div><div class="step"><b>3</b><strong>Sing the notes</strong><p>The group often sings the melody on fa-sol-la-mi first.</p></div><div class="step"><b>4</b><strong>Sing the words</strong><p>Then the poetry arrives with the full force of the parts.</p></div></div>
+      <div class="quote">“The singers are the music.”<small>Framing carried forward from the earlier Sacred Harp explainer</small></div>
+    </section>
+    <section class="slide omit" data-number="06" aria-label="The research problem">
+      <p class="kicker">The problem</p><h2>A rich tradition is hard to search.</h2>
+      <div class="grid"><div class="card"><span class="tag">The same text, many places</span><p>A lyric can recur under different tune names, page numbers, books, and editions.</p></div><div class="card"><span class="tag">The same tune, new context</span><p>Revisions preserve continuity while changing metadata, arrangement, or text presentation.</p></div><div class="card"><span class="tag">A flat search loses the why</span><p>A result is not enough. The researcher needs source notes, book families, and a traceable explanation.</p></div><div class="card"><span class="tag">The corpus is alive</span><p>Local notes, scans, transcriptions, and research discoveries accumulate over time.</p></div></div>
+    </section>
+    <section class="slide" data-number="06" aria-label="The agent">
+      <p class="kicker">What I built</p><h2>A local tool for searching the collection.</h2>
+      <p class="lead">I built the tool because the same text can appear under different songs, books, and editions. It searches those records and shows where each result came from.</p>
+      <div class="architecture"><div class="card"><span class="tag">01</span><h3>Keep source links</h3><ul><li>Source note</li><li>Book and edition</li><li>Song and text</li></ul></div><div class="card"><span class="tag">02</span><h3>Search the notes</h3><ul><li>SQLite / FTS5</li><li>Text and song records</li><li>Cross-book links</li></ul></div><div class="card"><span class="tag">03</span><h3>Show the source</h3><ul><li>Matching text</li><li>Citations</li><li>Known limits</li></ul></div></div>
+    </section>
+    <section class="slide omit" data-number="06" aria-label="Live demo">
+      <p class="kicker">Live demo · have the environment running</p><h2>Trace one question from text to evidence.</h2>
+      <p class="lead">Ask: “Where else does this text appear?” A good answer is a small map, not a single hit.</p>
+      <div class="grid three"><div class="card"><span class="tag">Match</span><h3>“Night Song”</h3><p>Find the text family and its known song records.</p></div><div class="card"><span class="tag">Trace</span><h3>Source text</h3><p>Connect the 2009 setting to Isaac Watts, 1719, and Psalm 42.</p></div><div class="card"><span class="tag">Interpret</span><h3>Context</h3><p>Separate the older text from the newer musical setting.</p></div></div>
+      <div class="quote">“Great troubles with tumultuous noise”<small>264 “Night Song”: the lyric to trace across editions and related books.</small></div>
+    </section>
+    <section class="slide" data-number="07" aria-label="Course concepts">
+      <p class="kicker">Course concepts</p><h2>Four ideas shaped the project.</h2>
+      <div class="diagram"><div class="node"><strong>Question</strong><span class="small">“Where does this text appear?”</span></div><div class="arrow">→</div><div class="node"><strong>Answer</strong><span class="small">Results with links back to the source.</span></div></div>
+      <div class="grid"><div class="card"><span class="tag">Search</span><p>Find matching records.</p></div><div class="card"><span class="tag">Data structure</span><p>Connect songs, texts, and books.</p></div><div class="card"><span class="tag">RAG</span><p>Give the model search results before it answers.</p></div><div class="card"><span class="tag">Testing</span><p>Measure correct results.</p></div></div>
+    </section>
+    <section class="slide" data-number="08" aria-label="Corpus and agent statistics">
+      <p class="kicker">By the numbers</p><h2>The collection and the results.</h2>
+      <div class="stat-grid"><div class="stat"><span class="stat-number">5,300+</span><span class="stat-label">interconnected notes</span></div><div class="stat"><span class="stat-number">3,326</span><span class="stat-label">song notes</span></div><div class="stat"><span class="stat-number">1,972</span><span class="stat-label">canonical text notes</span></div><div class="stat"><span class="stat-number">10</span><span class="stat-label">tunebook traditions</span></div></div>
+      <div class="stats-divider"></div><p class="eyebrow">Evaluation snapshot</p>
+      <div class="stat-grid"><div class="stat"><span class="stat-number">92.4%</span><span class="stat-label">correct match in the top 5 results</span></div><div class="stat"><span class="stat-number">99.6%</span><span class="stat-label">lyrics match in the top 5 results</span></div><div class="stat"><span class="stat-number">38.9%</span><span class="stat-label">answers improved by search</span></div><div class="stat"><span class="stat-number">5,022</span><span class="stat-label">examples tested</span></div></div>
+      <p class="small" style="margin-top:1.2rem">The tool found text well. It was less reliable when it had to write missing metadata: 17.4% correct.</p>
+    </section>
+    <section class="slide" data-number="09" aria-label="Retrospective">
+      <p class="kicker">Retrospective</p><h2>What worked and what did not.</h2>
+      <div class="grid"><div class="card"><span class="tag">Went right</span><p>Evidence stayed attached to the answer.</p></div><div class="card"><span class="tag">Harder than expected</span><p>Corpus cleanup and edition matching.</p></div><div class="card"><span class="tag">Went horribly wrong</span><p>A plausible answer can still blend sources.</p></div><div class="card"><span class="tag">Do differently</span><p>Design the evaluation set before polishing the interface.</p></div></div>
+    </section>
+    <section class="slide omit" data-number="11" aria-label="Harder than expected">
+      <p class="kicker">Harder than expected</p><h2>Corpus cleanup was the hidden project.</h2>
+      <div class="grid"><div class="card"><span class="tag">Identity drift</span><p>The same text can have different names, numbers, and book appearances.</p></div><div class="card"><span class="tag">Incomplete metadata</span><p>Some notes had rich prose but no reliable meter, key, or lyricist field.</p></div><div class="card"><span class="tag">Evaluation design</span><p>It is easy to show that search returns something; it is harder to prove that it returned the right relationship.</p></div><div class="card"><span class="tag">Takeaway</span><p>Retrieval quality depends on the data model long before the chat interface.</p></div></div>
+    </section>
+    <section class="slide omit" data-number="12" aria-label="What went horribly wrong">
+      <p class="kicker">What went horribly wrong</p><h2>A plausible answer can still be wrong.</h2>
+      <div class="quote">A model can sound confident while blending editions, guessing missing metadata, or citing a nearby match.<small>That failure mode is exactly why this project keeps source identity and uncertainty visible.</small></div>
+      <div class="grid"><div class="card"><span class="tag">The failure</span><p>Semantic similarity alone can collapse distinct songs or text families into one fuzzy result.</p></div><div class="card"><span class="tag">The repair</span><p>Route by type, preserve keys, surface matched fields, and make the human-readable source part of the answer.</p></div></div>
+    </section>
+    <section class="slide omit" data-number="13" aria-label="What I would do differently">
+      <p class="kicker">If I did it again</p><h2>Design the evaluation set before expanding the interface.</h2>
+      <div class="grid three"><div class="card"><span class="tag">01</span><p>Define cross-book test pairs first.</p></div><div class="card"><span class="tag">02</span><p>Record expected provenance with every benchmark question.</p></div><div class="card"><span class="tag">03</span><p>Build the citation view before adding more conversational polish.</p></div></div>
+      <p class="lead">The next version should make correctness visible at a glance.</p>
+    </section>
+    <section class="slide omit score-slide" data-number="09" aria-label="Sheet music page">
+      <p class="kicker">A page from the repertoire</p><h2>264 · Night Song</h2>
+      <p class="small" style="max-width:48rem;margin-top:.9rem">A sheet-music page makes the corpus tangible: title, meter, key, four parts, text, and the possibility of hearing each section separately.</p>
+      <figure class="score-frame"><img src="264-night-song-score.jpg" alt="Sheet music for Sacred Harp 264 Night Song, showing the title, key, meter, notes, and first line of text"><figcaption class="score-caption"><span>264 “Night Song” · F♯ minor · L.M.D.</span><a href="https://sacredharpbremen.org/264-night-song/">Source: Sacred Harp Bremen</a></figcaption></figure>
+      <p class="score-callout">The tool connects this page to the text and book records in the collection.</p>
+    </section>
+    <section class="slide closing" data-number="10" aria-label="Closing">
+      <p class="kicker">The point</p><h2>Make the archive easier to enter without flattening it.</h2>
+      <p class="lead">Sacred Harp is a group of people carrying a book together. My tool helps one researcher find the next page, connection, and source.</p>
+      <p class="small" style="margin-top:2.5rem">Built from the local Sacred Harp corpus and the earlier “Sacred Harp from the ground up” presentation.</p>
+    </section>
+  </main>
+  <div class="controls" aria-label="Presentation controls"><button id="prev" aria-label="Previous slide">←</button><div class="progress" aria-hidden="true"><i></i></div><button id="next" aria-label="Next slide">→</button></div>
+  <script>
+    const slides=[...document.querySelectorAll('.slide:not(.omit)')], bar=document.querySelector('.progress i'); let index=0;
+    function show(next){index=(next+slides.length)%slides.length;slides.forEach((s,i)=>s.classList.toggle('active',i===index));bar.style.width=((index+1)/slides.length*100)+'%';history.replaceState(null,'','#'+(index+1));}
+    function fromHash(){const n=Number(location.hash.slice(1));show(Number.isFinite(n)&&n>0?n-1:0)}
+    document.querySelector('#prev').addEventListener('click',()=>show(index-1));document.querySelector('#next').addEventListener('click',()=>show(index+1));
+    addEventListener('keydown',e=>{if(['ArrowRight',' ','PageDown'].includes(e.key)){e.preventDefault();show(index+1)}if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(index-1)}if(e.key==='Home')show(0);if(e.key==='End')show(slides.length-1)});addEventListener('hashchange',fromHash);
+    let touchX=0;addEventListener('touchstart',e=>touchX=e.changedTouches[0].screenX,{passive:true});addEventListener('touchend',e=>{const d=e.changedTouches[0].screenX-touchX;if(Math.abs(d)>45)show(index+(d<0?1:-1))},{passive:true});fromHash();
+  </script>
+</body>
+</html>
