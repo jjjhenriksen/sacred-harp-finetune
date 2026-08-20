@@ -18,6 +18,9 @@ The final presentation is the self-contained deck in
 `presentation/sacred-harp-agent-final.html`; keep the HTML beside its two image
 assets when opening it locally.
 
+The presentation is also deployed at
+<https://jjjhenriksen.github.io/sacred-harp-finetune/>.
+
 ## Corpus
 
 prepare_dataset.py reads the canonical Obsidian shape-note text hubs and song
