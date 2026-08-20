@@ -14,30 +14,30 @@ denies shell, filesystem, web, scheduler, gateway, and subagent tools.
 ## Train and evaluate
 
 ```zsh
-cd /path/to/sacred_harp_finetune
+# Run from the repository root.
 ./openclaw_capability/train_openclaw_capability.sh
 ```
 
 The source adapter is
-`sacred_harp_finetune/adapters/sacred_harp_1b_lora_vault`. The accepted,
+`adapters/sacred_harp_1b_lora_vault`. The accepted,
 ClickClack-corrected adapter is
-`sacred_harp_finetune/adapters/sacred_harp_1b_lora_openclaw_v2`. The current
+`adapters/sacred_harp_1b_lora_openclaw_v2`. The current
 interpretation-capable adapter continues from that checkpoint at
-`sacred_harp_finetune/adapters/sacred_harp_1b_lora_openclaw_v3_interpretation`.
+`adapters/sacred_harp_1b_lora_openclaw_v3_interpretation`.
 
 Capability evaluation:
 
 ```zsh
-sacred_harp_finetune_venv/bin/python \
-  sacred_harp_finetune/openclaw_capability/evaluate_openclaw_capability.py \
-  --adapter sacred_harp_finetune/adapters/sacred_harp_1b_lora_openclaw_v2 \
+python3 \
+  openclaw_capability/evaluate_openclaw_capability.py \
+  --adapter adapters/sacred_harp_1b_lora_openclaw_v2 \
   --harness-gating
 ```
 
 The interpretation correction run is reproducible with:
 
 ```zsh
-zsh sacred_harp_finetune/openclaw_capability/train_interpretation_correction.sh
+zsh openclaw_capability/train_interpretation_correction.sh
 ```
 
 Meaning/theme turns receive bounded thematic cues rather than a copyable full
@@ -71,7 +71,7 @@ Use the OpenClaw agent for questions that must be grounded in the Sacred Harp
 corpus. From the repository root:
 
 ```zsh
-cd /Users/jacquelinehenriksen/CPSC298-LocalLLM
+# Run from the repository root.
 openclaw agent \
   --agent sacredharpbench \
   --session-key presentation-question \
@@ -91,7 +91,8 @@ For the complete local preflight, which starts the provider when necessary and
 checks model selection, tool use, configuration, and ClickClack account health:
 
 ```zsh
-cd /path/to/sacred_harp_finetune/openclaw_capability
+# Run from the repository root.
+cd openclaw_capability
 ./verify_openclaw.sh
 ```
 
@@ -115,7 +116,7 @@ routing, and grounded answer rendering.
 After the accepted adapter exists:
 
 ```zsh
-./sacred_harp_finetune/openclaw_capability/install_openclaw.sh
+./openclaw_capability/install_openclaw.sh
 ```
 
 That registers `sacred-harp-local/sacred-harp-1b-openclaw`, reuses the existing

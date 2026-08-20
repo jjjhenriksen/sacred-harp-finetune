@@ -62,7 +62,6 @@ OpenClaw command in `openclaw_capability/README.md`.
 
 From this directory, the raw model-only command is:
 
-    cd /Users/jacquelinehenriksen/CPSC298-LocalLLM/sacred_harp_finetune
     ./evaluate_small.sh "What are the lyrics to Idumea?"
     ./evaluate_small.sh "Which song has the lyrics 'I can but perish if I go'?"
 
