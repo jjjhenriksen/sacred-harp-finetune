@@ -16,6 +16,15 @@ from sacred_harp_openclaw_server import (
 )
 
 
+class StructuredSongQuestionPatternTests(unittest.TestCase):
+    def test_recognizes_first_verse_and_other_song_question(self):
+        from sacred_harp_openclaw_server import FIRST_VERSE_RE, SONG_SHARED_TEXT_RE
+
+        question = "What is the first verse of 29t in the Sacred Harp and what other song shares it?"
+        self.assertRegex(question, FIRST_VERSE_RE)
+        self.assertRegex(question, SONG_SHARED_TEXT_RE)
+
+
 class CompactClickClackPromptTests(unittest.TestCase):
     def test_removes_clickclack_metadata_and_bot_mention(self):
         wrapped = """Conversation info (untrusted metadata):

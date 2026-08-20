@@ -107,6 +107,15 @@ SHARED_TEXT_RE = re.compile(
     r"sacredharptunes)\s*)?(\d+[a-z]?)\b",
     re.IGNORECASE,
 )
+SONG_SHARED_TEXT_RE = re.compile(
+    r"\b(\d+[a-z]?)\b.*?\b(?:other|another)\s+(?:song|tune)\b.*?\b"
+    r"(?:share|shares|shared|same)\b",
+    re.IGNORECASE,
+)
+FIRST_VERSE_RE = re.compile(
+    r"\b(?:first|1st|one)\s+(?:verse|stanza)\b",
+    re.IGNORECASE,
+)
 TUNE_TEXT_QUERY_RE = re.compile(
     r"\bwhat\s+(?:tunes?|songs?)\s+(?:have|share|use|set|sing)\s+"
     r"(?:the\s+)?text\b",
@@ -936,6 +945,9 @@ class SpecialistRuntime:
 
     def search(self, query: str, top_k: int = 5) -> dict[str, Any]:
         self._load_rag()
+        song_shared = self.song_shared_text_answer(query)
+        if song_shared:
+            return song_shared
         shared = self.shared_text_answer(query)
         if shared:
             return shared
@@ -961,6 +973,75 @@ class SpecialistRuntime:
                 }
             )
         return {"query": query, "exact": False, "results": results}
+
+    def song_shared_text_answer(self, query: str) -> dict[str, Any] | None:
+        """Resolve first-verse and shared-song questions from song indexes."""
+
+        if not FIRST_VERSE_RE.search(query) or not SONG_SHARED_TEXT_RE.search(query):
+            return None
+        number_match = re.search(r"\b(\d+[a-z]?)\b", query, re.IGNORECASE)
+        if not number_match:
+            return None
+
+        by_book_song, by_text_key = self._rag.structured_song_indexes()
+        number = number_match.group(1).lower()
+        candidates = list(by_book_song.get(("sh", number), ()))
+        if not candidates:
+            return None
+        identifier, text, metadata = candidates[0]
+        fields = self._rag._metadata_fields(text)
+        canonical = text.split("Linked canonical text:", 1)[-1].strip()
+        sections = self._rag._canonical_sections(canonical)
+        heading = self._rag._section_for_witness(
+            sections, "sh", number, str(metadata.get("source", ""))
+        )
+        if not heading:
+            return None
+        blocks = [block.strip() for block in re.split(r"\n\s*\n", sections[heading]) if block.strip()]
+        if not blocks:
+            return None
+
+        text_key = fields.get("Canonical text key", "").strip().lower()
+        related = by_text_key.get(text_key, ())
+        grouped: dict[tuple[str, str], list[str]] = {}
+        sources = [str(metadata.get("source", identifier))]
+        target_song = fields.get("Song", "").strip().casefold()
+        for related_identifier, related_text, related_metadata in related:
+            related_fields = self._rag._metadata_fields(related_text)
+            song = related_fields.get("Song", "").strip()
+            song_number = related_fields.get("Song number", "").strip()
+            if not song or not song_number or song.casefold() == target_song and song_number.casefold() == number:
+                continue
+            key = (song, song_number)
+            witness = f"{related_identifier}\n{related_text}"
+            references = grouped.setdefault(key, [])
+            for reference in edition_references(
+                related_fields.get("Book family", ""), song_number, witness
+            ):
+                if reference not in references:
+                    references.append(reference)
+            source = str(related_metadata.get("source", related_identifier))
+            if source not in sources:
+                sources.append(source)
+
+        if not grouped:
+            return None
+        target_label = f"The Sacred Harp {number}, {fields.get('Song', 'the requested song')}"
+        lines = [
+            f"The first verse of {target_label} is:",
+            blocks[0],
+            "",
+            "The same canonical text family also appears in:",
+        ]
+        for (song, song_number), references in sorted(grouped.items(), key=lambda item: (item[0][1], item[0][0].casefold())):
+            lines.append(f"- {song_number}, {song} — {', '.join(sorted(references))}")
+        lines.append("These are text-family matches; tune settings and editions may differ.")
+        return {
+            "query": query,
+            "exact": True,
+            "answer": "\n".join(lines),
+            "sources": sources[:12],
+        }
 
     def shared_text_answer(self, query: str) -> dict[str, Any] | None:
         """Resolve cross-witness text-family questions without model synthesis."""
