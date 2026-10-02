@@ -29,7 +29,17 @@ The generated data includes lyric-answer examples from text hubs and metadata
 examples from song notes. It preserves book families, edition labels, song
 numbers, canonical text keys, and first lines.
 
-The current generated manifest is in data/manifest.json.
+Pass the generated vault root containing `texts/` and `songs/` directories.
+Missing directories or an empty corpus are rejected before existing outputs
+are touched. All splits and `manifest.json` are staged together; publication
+preserves other files in the output directory and restores the previous
+directory if promotion fails. The current generated manifest is in
+`data/manifest.json`.
+
+The dataset publication regressions use fictional notes and the Python
+standard library; they do not run training or load a model:
+
+    python3 -m unittest discover -s tests -v
 
 ## Train
 

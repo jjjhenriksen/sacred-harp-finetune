@@ -8,6 +8,8 @@ import hashlib
 import json
 import os
 import re
+import shutil
+import tempfile
 from pathlib import Path
 
 
@@ -87,6 +89,8 @@ def song_records(root: Path) -> list[dict[str, str]]:
         raw = path.read_text(encoding="utf-8")
         metadata, raw_body = split_frontmatter(raw)
         body = clean_body(raw_body)
+        if not body and not metadata:
+            continue
         title = metadata.get("title") or title_from_body(body, path.stem)
         match = re.search(r"^- Raw First Line:\s*(.+)$", body, flags=re.MULTILINE)
         records.append(
@@ -167,21 +171,69 @@ def split_examples(examples: list[dict]) -> dict[str, list[dict]]:
     return splits
 
 
+def validate_corpus(root: Path) -> None:
+    if not (root / "texts").is_dir() or not (root / "songs").is_dir():
+        raise ValueError(f"Corpus root must contain texts/ and songs/ directories: {root}")
+
+
+def publish_dataset(output: Path, splits: dict[str, list[dict]], manifest: dict) -> None:
+    """Stage a complete generation, preserving unrelated files and rollback data."""
+    if output.is_symlink() or (output.exists() and not output.is_dir()):
+        raise ValueError(f"Dataset output must be a regular directory: {output}")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    staging = Path(tempfile.mkdtemp(prefix=f".{output.name}-stage-", dir=output.parent))
+    new = staging / "new"
+    backup = staging / "previous"
+    published = False
+    try:
+        if output.exists():
+            shutil.copytree(output, new, symlinks=True)
+        else:
+            new.mkdir()
+        files = {f"{name}.jsonl": "".join(json.dumps(record, ensure_ascii=False) + "\n" for record in records)
+                 for name, records in splits.items()}
+        files["manifest.json"] = json.dumps(manifest, indent=2, ensure_ascii=False) + "\n"
+        for name, content in files.items():
+            path = new / name
+            # A managed-file symlink must not write through to another dataset.
+            if path.is_symlink():
+                path.unlink()
+            with path.open("w", encoding="utf-8") as handle:
+                handle.write(content)
+                handle.flush()
+                os.fsync(handle.fileno())
+        if output.exists():
+            os.replace(output, backup)
+        try:
+            os.replace(new, output)
+        except OSError:
+            if backup.exists():
+                try:
+                    os.replace(backup, output)
+                except OSError as error:
+                    raise RuntimeError(f"Dataset promotion and rollback failed; previous data retained at {backup}") from error
+            raise
+        published = True
+    finally:
+        # A failed rollback retains the old dataset for recovery rather than deleting it.
+        if published or not backup.exists():
+            shutil.rmtree(staging)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--vault-root", type=Path, default=DEFAULT_VAULT_ROOT)
     parser.add_argument("--output", type=Path, default=Path("data"))
     args = parser.parse_args()
 
-    examples = make_examples(args.vault_root)
+    try:
+        validate_corpus(args.vault_root)
+        examples = make_examples(args.vault_root)
+        if not examples:
+            raise ValueError("Corpus produced no examples; existing dataset was preserved.")
+    except ValueError as error:
+        parser.error(str(error))
     splits = split_examples(examples)
-    args.output.mkdir(parents=True, exist_ok=True)
-    for name, records in splits.items():
-        path = args.output / f"{name}.jsonl"
-        with path.open("w", encoding="utf-8") as handle:
-            for record in records:
-                handle.write(json.dumps(record, ensure_ascii=False) + "\n")
-
     manifest = {
         "vault_root": str(args.vault_root),
         "total_examples": len(examples),
@@ -190,10 +242,7 @@ def main() -> None:
         "source_song_notes": len(song_records(args.vault_root)),
         "system_prompt": SYSTEM_PROMPT,
     }
-    (args.output / "manifest.json").write_text(
-        json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-    )
+    publish_dataset(args.output, splits, manifest)
     print(json.dumps(manifest, indent=2, ensure_ascii=False))
 
 
