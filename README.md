@@ -49,12 +49,54 @@ standard library; they do not run training or load a model:
 
     python3 -m unittest discover -s tests -v
 
+## Native environment setup
+
+Training and the OpenClaw provider use `requirements-mlx.txt`, which pins
+MLX 0.32.3 and MLX-LM 0.32.0 with its training dependencies. This runtime needs
+Apple Silicon, native arm64 CPython 3.11 or later (3.12 recommended), and
+macOS 14 or later. Python running under Rosetta and the system Python 3.9 do
+not meet this contract. See the [MLX installation requirements](https://ml-explore.github.io/mlx/build/html/install.html)
+and [MLX-LM package specification](https://github.com/ml-explore/mlx-lm/blob/main/pyproject.toml).
+
+From a fresh clone, use a separately installed native Python 3.12:
+
+```sh
+python3.12 -m venv .venv
+.venv/bin/python -m pip install -r requirements-mlx.txt
+.venv/bin/python -m pip check
+.venv/bin/python scripts/check_mlx_environment.py
+export SACRED_HARP_PYTHON="$PWD/.venv/bin/python"
+export SACRED_HARP_VENV="$PWD/.venv"
+```
+
+The explicit runtime variables make the existing training, evaluation,
+installation and verification scripts use this environment rather than a
+preexisting sibling virtualenv. Activation is optional; the commands above
+use the exact environment interpreter even when a shell aliases `python3`.
+For a later terminal session, set both variables again from the repo root.
+
+`check_mlx_environment.py` verifies platform and pinned versions, imports the
+native training/provider APIs, and executes dataset, LoRA, generation and
+provider CLI help with an empty temporary Hub cache and offline flags. It
+loads no model, starts no training, and opens no provider port. Add
+`--output reports/install-check.json` to retain its evidence. Import/help
+checks do not prove model/adapter compatibility, training quality or the
+external RAG corpus. The provider also requires a configured external backend
+as described in `openclaw_capability/README.md`.
+
+The pins version the native engine/API; pip resolves their transitive
+dependencies. Save `.venv/bin/python -m pip freeze` with a training run to
+record the full installed dependency set. Vault regeneration dependencies in
+`vault_reproduction` and optional GGUF/Ollama export tools are separate scopes;
+this file does not install their additional toolchains. Portable root tests
+still need only the Python standard library and run without MLX on Linux.
+
 ## Train
 
-The environment is in the sibling virtualenv. Run:
+After the environment setup above, run:
 
     SACRED_HARP_VAULT_ROOT=/path/to/generated-obsidian-vault \
-      python3 prepare_dataset.py --output data
+      "$SACRED_HARP_PYTHON" prepare_dataset.py --output data
     ./train_small.sh
 
 The training script performs one pass over the training split, with eight LoRA

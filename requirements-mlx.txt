@@ -1,0 +1,5 @@
+# Training and OpenClaw provider runtime (native Apple Silicon, Python >=3.11).
+# Pin the native engine and model/training API together. Transitive dependencies
+# are resolved by pip; retain pip freeze output with each training run.
+mlx==0.32.3
+mlx-lm[train]==0.32.0

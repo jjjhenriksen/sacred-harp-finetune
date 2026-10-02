@@ -78,13 +78,16 @@ openclaw agent \
   --message "What are the lyrics to Idumea? Use the Sacred Harp corpus."
 ```
 
+First create the pinned native environment and set `SACRED_HARP_PYTHON` and
+`SACRED_HARP_VENV` using the root README installation steps.
+
 This path requires the Sacred Harp provider and an external Python RAG backend.
 The RAG implementation and its corpus/dependencies are separate from this repo;
 a clone alone does not include them. Select the installed backend explicitly
 when starting the provider in a separate terminal:
 
 ```zsh
-python3 \
+"$SACRED_HARP_PYTHON" \
   openclaw_capability/sacred_harp_openclaw_server.py \
   --host 127.0.0.1 --port 18991 \
   --rag-script /absolute/path/to/sacred_harp_mlx_rag.py

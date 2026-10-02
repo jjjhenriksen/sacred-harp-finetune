@@ -17,3 +17,20 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - run: python -m unittest discover -s tests -v
+  native-install:
+    runs-on: macos-14
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: arm64
+      - run: python -m venv .venv
+      - run: .venv/bin/python -m pip install -r requirements-mlx.txt
+      - run: .venv/bin/python -m pip check
+      - run: .venv/bin/python scripts/check_mlx_environment.py --output reports/install-check.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-install-evidence
+          path: reports/install-check.json
