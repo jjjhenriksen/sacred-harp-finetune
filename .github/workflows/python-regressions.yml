@@ -6,7 +6,7 @@ on:
 permissions:
   contents: read
 jobs:
-  dataset:
+  regressions:
     runs-on: ubuntu-latest
     strategy:
       matrix:
