@@ -135,3 +135,18 @@ allowlists, and a running ClickClack account with the expected binding. This
 catches the three integration failures that previously looked like a model
 rejection: missing explicit ownership, intersecting tool policies that removed
 every tool, and lean-mode meta-tool indirection.
+
+
+Checkpoint selection stages a copy on the adapter's filesystem, verifies its
+size and SHA-256, and atomically replaces `adapters.safetensors`. The selection
+receipt directory is created as needed; the receipt is also staged and replaced
+atomically, and records the adapter size and checksum. If receipt promotion
+fails after adapter promotion, the complete new adapter and previous receipt
+remain; rerun selection to publish the matching receipt.
+
+Portable publication regressions run from the repository root without loading
+MLX, training a model, or contacting a provider:
+
+```sh
+python3 -m unittest discover -s tests -v
+```
