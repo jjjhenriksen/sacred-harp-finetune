@@ -78,13 +78,16 @@ openclaw agent \
   --message "What are the lyrics to Idumea? Use the Sacred Harp corpus."
 ```
 
-This path requires the Sacred Harp provider and its local RAG service. If the
-provider is not already running, start it in a separate terminal:
+This path requires the Sacred Harp provider and an external Python RAG backend.
+The RAG implementation and its corpus/dependencies are separate from this repo;
+a clone alone does not include them. Select the installed backend explicitly
+when starting the provider in a separate terminal:
 
 ```zsh
 python3 \
   openclaw_capability/sacred_harp_openclaw_server.py \
-  --host 127.0.0.1 --port 18991
+  --host 127.0.0.1 --port 18991 \
+  --rag-script /absolute/path/to/sacred_harp_mlx_rag.py
 ```
 
 For the complete local preflight, which starts the provider when necessary and
@@ -165,3 +168,28 @@ must be positive integers, temperature must be finite and between 0 and 2, and
 `stream` must be a boolean. Valid tool history and streamed responses retain
 their existing protocol. These checks are covered by loopback HTTP fixtures
 with a fake runtime; they do not establish live model or RAG readiness.
+
+### External RAG startup contract
+
+`--rag-script` selects a trusted local Python backend. For compatibility the
+default remains the sibling path
+`../sacred_harp_ollama_rag/sacred_harp_mlx_rag.py` relative to the repository.
+Install that backend's own dependencies and configure its corpus before starting
+this provider; the backend is imported as executable Python, not downloaded or
+installed automatically.
+
+Startup validates the file and these callables: `build_collection(refresh)`,
+`exact_verse_answer(query)`, `retrieve(collection, query)`,
+`structured_song_indexes()`, `_metadata_fields(text)`,
+`_canonical_sections(text)`, and `_section_for_witness(sections, book, number,
+source)`. `build_collection(False)` must return a non-null collection;
+`structured_song_indexes()` must return the book/song and text-key mappings
+used by the shared-text paths. Import, interface, collection and index errors
+include the selected path and `--rag-script` guidance, preserve the underlying
+exception, and stop startup before loading the model or opening the HTTP port.
+Only successful initialization permits the listening message and health route.
+The collection is reused for requests.
+
+Portable tests inject a small backend and verify startup failure/readiness and
+actual search dispatch. They do not certify the external backend's corpus,
+embeddings, retrieval quality, or live MLX installation.

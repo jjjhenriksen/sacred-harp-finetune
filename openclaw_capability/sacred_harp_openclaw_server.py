@@ -9,6 +9,7 @@ that JSON and returns standard OpenAI ``tool_calls`` for OpenClaw's harness.
 from __future__ import annotations
 
 import argparse
+from collections.abc import Mapping
 import importlib.util
 import json
 import math
@@ -840,15 +841,17 @@ def parse_tool_call(text: str, allowed_names: set[str]) -> tuple[str, dict[str, 
 
 
 class SpecialistRuntime:
-    def __init__(self, model_path: Path, adapter_path: Path) -> None:
+    def __init__(self, model_path: Path, adapter_path: Path, rag_script: Path | None = None) -> None:
         if not model_path.exists():
             raise FileNotFoundError(f"Model not found: {model_path}")
         if not adapter_path.exists():
             raise FileNotFoundError(f"Adapter not found: {adapter_path}")
-        self.model, self.tokenizer = load(str(model_path), adapter_path=str(adapter_path))
-        self.lock = threading.Lock()
+        self.rag_script = Path(rag_script if rag_script is not None else RAG_SCRIPT).expanduser().resolve()
         self._rag = None
         self._collection = None
+        self._load_rag()
+        self.model, self.tokenizer = load(str(model_path), adapter_path=str(adapter_path))
+        self.lock = threading.Lock()
 
     def complete(self, body: dict[str, Any]) -> dict[str, Any]:
         messages = normalize_messages(body.get("messages", []))
@@ -939,14 +942,40 @@ class SpecialistRuntime:
     def _load_rag(self):
         if self._rag is not None:
             return
-        spec = importlib.util.spec_from_file_location("sacred_harp_openclaw_rag", RAG_SCRIPT)
-        if spec is None or spec.loader is None:
-            raise RuntimeError(f"Could not import RAG module from {RAG_SCRIPT}")
-        module = importlib.util.module_from_spec(spec)
-        sys.modules[spec.name] = module
-        spec.loader.exec_module(module)
+        path = self.rag_script
+        guidance = f"Configure --rag-script with a working Sacred Harp RAG backend (selected: {path})"
+        if not path.is_file():
+            raise RuntimeError(f"RAG backend not found: {path}. {guidance}")
+        name = f"sacred_harp_openclaw_rag_{uuid.uuid4().hex}"
+        module = None
+        try:
+            spec = importlib.util.spec_from_file_location(name, path)
+            if spec is None or spec.loader is None:
+                raise RuntimeError("Could not create a Python module loader")
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[name] = module
+            spec.loader.exec_module(module)
+            required = (
+                "build_collection", "exact_verse_answer", "retrieve",
+                "structured_song_indexes", "_metadata_fields", "_canonical_sections",
+                "_section_for_witness",
+            )
+            missing = [field for field in required if not callable(getattr(module, field, None))]
+            if missing:
+                raise RuntimeError(f"Missing callable interface: {', '.join(missing)}")
+            collection = module.build_collection(False)
+            if collection is None:
+                raise RuntimeError("build_collection(False) returned no collection")
+            indexes = module.structured_song_indexes()
+            if not isinstance(indexes, (tuple, list)) or len(indexes) != 2 or not all(isinstance(index, Mapping) for index in indexes):
+                raise RuntimeError("structured_song_indexes() must return two mapping indexes")
+        except Exception as error:
+            if module is not None and sys.modules.get(name) is module:
+                del sys.modules[name]
+            raise RuntimeError(f"RAG backend initialization failed: {error}. {guidance}") from error
+        # Publish readiness only after import, interface and corpus initialization succeed.
         self._rag = module
-        self._collection = module.build_collection(False)
+        self._collection = collection
 
     def search(self, query: str, top_k: int = 5) -> dict[str, Any]:
         self._load_rag()
@@ -1406,10 +1435,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", type=Path, default=DEFAULT_MODEL)
     parser.add_argument("--adapter", type=Path, default=DEFAULT_ADAPTER)
+    parser.add_argument("--rag-script", type=Path, default=RAG_SCRIPT, help="Path to the external Sacred Harp RAG Python backend; validated before readiness")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=18991)
     args = parser.parse_args()
-    runtime = SpecialistRuntime(args.model, args.adapter)
+    runtime = SpecialistRuntime(args.model, args.adapter, rag_script=args.rag_script)
     # MLX GPU streams are thread-local. Keep inference and retrieval on the
     # loading thread; this tiny specialist intentionally serves one turn at a time.
     server = HTTPServer((args.host, args.port), Handler)
