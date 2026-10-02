@@ -10,6 +10,7 @@ def load_provider():
     mlx = ModuleType('mlx_lm')
     mlx.load = Mock(side_effect=AssertionError('Model load is forbidden in portable fixtures'))
     mlx.generate = Mock(side_effect=AssertionError('Model generation is forbidden in portable fixtures'))
+    mlx.stream_generate = Mock(side_effect=AssertionError('Model generation is forbidden in portable fixtures'))
     sampling = ModuleType('mlx_lm.sample_utils')
     sampling.make_sampler = Mock(side_effect=AssertionError('Native sampler is forbidden in portable fixtures'))
     source = Path(__file__).resolve().parents[1] / 'openclaw_capability' / 'sacred_harp_openclaw_server.py'

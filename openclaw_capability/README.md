@@ -193,3 +193,22 @@ The collection is reused for requests.
 Portable tests inject a small backend and verify startup failure/readiness and
 actual search dispatch. They do not certify the external backend's corpus,
 embeddings, retrieval quality, or live MLX installation.
+
+### Completion usage
+
+Non-streaming model completions report `prompt_tokens` and `completion_tokens`
+from the final MLX `stream_generate` response (`prompt_tokens` and
+`generation_tokens`), with `total_tokens` equal to their sum. The complete
+generation is still collected before the existing answer/tool-call processing;
+the external SSE protocol is unchanged. Whitespace stripping, tool argument
+repair and deterministic answer replacement do not alter the measured model
+counts. Backend generation counters include its own stopping-token accounting.
+See the [MLX generation API source](https://github.com/ml-explore/mlx-lm/blob/main/mlx_lm/generate.py)
+for the counter contract; string-only `generate` uses this same generator.
+
+If final counters are missing or invalid, `usage` is omitted. Deterministic
+tool routing and direct corpus answers also omit model usage because they
+perform no generation; message character counts are not token measurements.
+Streamed responses continue to omit usage. Portable HTTP regressions verify
+known fake generation counters, including final empty segments, fallback and
+tool-call processing; they do not measure a live model or performance.

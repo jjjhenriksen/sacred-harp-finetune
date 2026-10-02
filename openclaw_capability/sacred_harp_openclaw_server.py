@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from mlx_lm import generate, load
+from mlx_lm import load, stream_generate
 from mlx_lm.sample_utils import make_sampler
 
 
@@ -873,7 +873,7 @@ class SpecialistRuntime:
                 ],
                 "finish_reason": "tool_calls",
                 "raw": "[ClickClack harness route]",
-                "prompt_tokens": sum(len(message_text(item.get("content"))) for item in messages),
+                "usage": None,
             }
         latest = latest_turn_message(messages)
         if is_tool_result_message(latest):
@@ -886,7 +886,7 @@ class SpecialistRuntime:
                     "tool_calls": None,
                     "finish_reason": "stop",
                     "raw": grounded,
-                    "prompt_tokens": 0,
+                    "usage": None,
                 }
         generation_messages = compact_generation_messages(messages)
         prompt = self.tokenizer.apply_chat_template(
@@ -900,14 +900,30 @@ class SpecialistRuntime:
             DEFAULT_SYNTHESIS_TEMPERATURE if post_tool else DEFAULT_TEMPERATURE
         )
         temperature = float(body.get("temperature", default_temperature))
+        last_response = None
+        segments = []
         with self.lock:
-            output = generate(
+            for response in stream_generate(
                 self.model,
                 self.tokenizer,
                 prompt,
                 max_tokens=max_tokens,
                 sampler=make_sampler(temp=max(0.0, temperature)),
-            ).strip()
+            ):
+                segments.append(response.text)
+                last_response = response
+        output = "".join(segments).strip()
+        # Use backend counters, including final empty-text segments/EOS. Decoded
+        # text, fallback text and chunk counts do not establish model token use.
+        usage = None
+        prompt_tokens = getattr(last_response, "prompt_tokens", None)
+        completion_tokens = getattr(last_response, "generation_tokens", None)
+        if type(prompt_tokens) is int and prompt_tokens >= 0 and type(completion_tokens) is int and completion_tokens >= 0:
+            usage = {
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+                "total_tokens": prompt_tokens + completion_tokens,
+            }
         fallback = interpretive_fallback_answer(latest_user_request(messages), messages, output)
         if fallback:
             output = fallback
@@ -929,14 +945,14 @@ class SpecialistRuntime:
                 ],
                 "finish_reason": "tool_calls",
                 "raw": output,
-                "prompt_tokens": len(prompt),
+                "usage": usage,
             }
         return {
             "content": output,
             "tool_calls": None,
             "finish_reason": "stop",
             "raw": output,
-            "prompt_tokens": len(prompt),
+            "usage": usage,
         }
 
     def _load_rag(self):
@@ -1409,21 +1425,16 @@ class Handler(BaseHTTPRequestHandler):
             message: dict[str, Any] = {"role": "assistant", "content": result["content"]}
             if result["tool_calls"]:
                 message["tool_calls"] = result["tool_calls"]
-            self.send_json(
-                200,
-                {
-                    "id": completion_id,
-                    "object": "chat.completion",
-                    "created": created,
-                    "model": model,
-                    "choices": [{"index": 0, "message": message, "finish_reason": result["finish_reason"]}],
-                    "usage": {
-                        "prompt_tokens": result["prompt_tokens"],
-                        "completion_tokens": 0,
-                        "total_tokens": result["prompt_tokens"],
-                    },
-                },
-            )
+            response_body = {
+                "id": completion_id,
+                "object": "chat.completion",
+                "created": created,
+                "model": model,
+                "choices": [{"index": 0, "message": message, "finish_reason": result["finish_reason"]}],
+            }
+            if result.get("usage") is not None:
+                response_body["usage"] = result["usage"]
+            self.send_json(200, response_body)
         except ClientRequestError as exc:
             self.close_connection = True
             self.send_json(exc.status, {"error": {"message": str(exc), "type": "invalid_request_error"}})
