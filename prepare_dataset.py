@@ -13,6 +13,9 @@ import tempfile
 from pathlib import Path
 
 
+SPLIT_POLICY_VERSION = "sha1-160-80-10-10-v2"
+HASH_SPACE = 1 << 160
+
 DEFAULT_VAULT_ROOT = Path(os.environ.get("SACRED_HARP_VAULT_ROOT", "."))
 SYSTEM_PROMPT = (
     "You are a careful Sacred Harp reference assistant. Answer from the "
@@ -163,8 +166,10 @@ def make_examples(root: Path) -> list[dict]:
 def split_examples(examples: list[dict]) -> dict[str, list[dict]]:
     splits = {"train": [], "valid": [], "test": []}
     for example in examples:
-        digest = hashlib.sha1(example["group"].encode("utf-8")).digest()[0] % 100
-        split = "train" if digest < 80 else "valid" if digest < 90 else "test"
+        # Compare the full hash to rational thresholds without modulo or float rounding.
+        digest = int.from_bytes(hashlib.sha1(example["group"].encode("utf-8")).digest(), "big")
+        scaled = digest * 10
+        split = "train" if scaled < 8 * HASH_SPACE else "valid" if scaled < 9 * HASH_SPACE else "test"
         splits[split].append(
             {key: value for key, value in example.items() if key != "group"}
         )
@@ -238,6 +243,12 @@ def main() -> None:
         "vault_root": str(args.vault_root),
         "total_examples": len(examples),
         "splits": {name: len(records) for name, records in splits.items()},
+        "split_policy": {
+            "version": SPLIT_POLICY_VERSION,
+            "hash_bits": 160,
+            "fractions": {"train": 0.8, "valid": 0.1, "test": 0.1},
+            "grouped": True,
+        },
         "source_text_notes": len(canonical_texts(args.vault_root)),
         "source_song_notes": len(song_records(args.vault_root)),
         "system_prompt": SYSTEM_PROMPT,

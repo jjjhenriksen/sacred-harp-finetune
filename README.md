@@ -36,6 +36,14 @@ preserves other files in the output directory and restores the previous
 directory if promotion fails. The current generated manifest is in
 `data/manifest.json`.
 
+Split policy `sha1-160-80-10-10-v2` assigns the full 160-bit SHA-1 group hash
+using integer thresholds at 80% and 90%. Every example in a group receives the
+same deterministic split, independent of input order. The manifest records
+the policy version and nominal 80/10/10 fractions. This changes membership
+from the prior one-byte modulo policy: regenerate the dataset and rerun
+training/evaluation before comparing results under the new policy. Prior
+losses and held-out scores are not directly comparable across the policies.
+
 The dataset publication regressions use fictional notes and the Python
 standard library; they do not run training or load a model:
 
