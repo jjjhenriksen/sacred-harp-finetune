@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import math
 import re
 import sys
 import threading
@@ -35,6 +36,10 @@ MODEL_ID = "sacred-harp-1b-openclaw"
 DEFAULT_TEMPERATURE = 0.0
 DEFAULT_SYNTHESIS_TEMPERATURE = 0.35
 DEFAULT_MAX_TOKENS = 512
+MAX_REQUEST_BODY_BYTES = 1024 * 1024
+REQUEST_READ_CHUNK_BYTES = 64 * 1024
+REQUEST_READ_TIMEOUT_SECONDS = 5.0
+
 MAX_TOOL_RESULT_CHARS = 9000
 MAX_COMPACT_EVIDENCE_CHARS = 6000
 MAX_COMPACT_RESULT_CHARS = 2800
@@ -1212,6 +1217,52 @@ class SpecialistRuntime:
         }
 
 
+class ClientRequestError(ValueError):
+    def __init__(self, message: str, status: int = 400) -> None:
+        super().__init__(message)
+        self.status = status
+
+
+def validate_request(body: dict[str, Any], path: str) -> None:
+    if path == "/sacred-harp/search":
+        if not isinstance(body.get("query"), str) or not body["query"].strip():
+            raise ClientRequestError("query must be a nonempty string")
+        top_k = body.get("top_k", 5)
+        if type(top_k) is not int or not 1 <= top_k <= 5:
+            raise ClientRequestError("top_k must be an integer from 1 to 5")
+        return
+    messages = body.get("messages")
+    if not isinstance(messages, list) or not messages:
+        raise ClientRequestError("messages must be a nonempty array of message objects")
+    for message in messages:
+        if not isinstance(message, dict) or not isinstance(message.get("role"), str) or message["role"] not in {"system", "developer", "user", "assistant", "tool", "function"}:
+            raise ClientRequestError("Each message must have a supported string role")
+        content = message.get("content")
+        if content is not None and not isinstance(content, (str, list)):
+            raise ClientRequestError("message content must be a string, content-part array, or null")
+        if isinstance(content, list) and any(not isinstance(part, dict) for part in content):
+            raise ClientRequestError("message content parts must be objects")
+        calls = message.get("tool_calls")
+        if calls is not None:
+            if not isinstance(calls, list) or any(not isinstance(call, dict) or not isinstance(call.get("function"), dict) for call in calls):
+                raise ClientRequestError("message tool_calls must contain function objects")
+    tools = body.get("tools")
+    if tools is not None and (not isinstance(tools, list) or any(not isinstance(tool, dict) or not isinstance(tool.get("function"), dict) for tool in tools)):
+        raise ClientRequestError("tools must be an array of function objects or null")
+    for field in ("max_tokens", "max_completion_tokens"):
+        value = body.get(field)
+        if value is not None and (type(value) is not int or value <= 0):
+            raise ClientRequestError(f"{field} must be a positive integer")
+    if "temperature" in body:
+        value = body["temperature"]
+        if type(value) not in (int, float) or not 0 <= value <= 2 or not math.isfinite(value):
+            raise ClientRequestError("temperature must be a finite number from 0 to 2")
+    if "stream" in body and type(body["stream"]) is not bool:
+        raise ClientRequestError("stream must be a boolean")
+    if body.get("model") is not None and not isinstance(body["model"], str):
+        raise ClientRequestError("model must be a string or null")
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "SacredHarpOpenClaw/1.0"
 
@@ -1231,8 +1282,41 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def read_json(self) -> dict[str, Any]:
-        length = int(self.headers.get("Content-Length", "0"))
-        return json.loads(self.rfile.read(length) or b"{}")
+        if self.headers.get("Transfer-Encoding") is not None:
+            raise ClientRequestError("Transfer-Encoding is unsupported; send a Content-Length JSON body")
+        lengths = self.headers.get_all("Content-Length", [])
+        if len(lengths) != 1 or re.fullmatch(r"[0-9]+", lengths[0].strip()) is None:
+            raise ClientRequestError("A single nonnegative integer Content-Length is required")
+        length_text = lengths[0].strip().lstrip("0") or "0"
+        limit_text = str(MAX_REQUEST_BODY_BYTES)
+        if len(length_text) > len(limit_text) or (len(length_text) == len(limit_text) and length_text > limit_text):
+            raise ClientRequestError(f"Request body exceeds {MAX_REQUEST_BODY_BYTES} bytes", 413)
+        length = int(length_text)
+        deadline = time.monotonic() + REQUEST_READ_TIMEOUT_SECONDS
+        raw = bytearray()
+        while len(raw) < length:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise ClientRequestError("Request body is incomplete or timed out")
+            self.connection.settimeout(remaining)
+            try:
+                chunk = self.rfile.read1(min(REQUEST_READ_CHUNK_BYTES, length - len(raw)))
+            except (TimeoutError, OSError) as error:
+                raise ClientRequestError("Request body is incomplete or timed out") from error
+            if not chunk:
+                raise ClientRequestError("Request body is incomplete")
+            raw.extend(chunk)
+            if len(raw) > MAX_REQUEST_BODY_BYTES:
+                raise ClientRequestError(f"Request body exceeds {MAX_REQUEST_BODY_BYTES} bytes", 413)
+        def reject_constant(value: str) -> None:
+            raise ValueError(f"Non-finite JSON number: {value}")
+        try:
+            body = json.loads(raw.decode("utf-8"), parse_constant=reject_constant)
+        except (ValueError, UnicodeDecodeError, RecursionError) as error:
+            raise ClientRequestError("Request body must contain valid UTF-8 JSON with finite numbers") from error
+        if not isinstance(body, dict):
+            raise ClientRequestError("Request body must be a JSON object")
+        return body
 
     def do_GET(self) -> None:
         path = urlparse(self.path).path
@@ -1249,17 +1333,16 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         path = urlparse(self.path).path
+        if path not in {"/sacred-harp/search", "/v1/chat/completions"}:
+            self.close_connection = True
+            self.send_json(404, {"error": {"message": "Not found"}})
+            return
         try:
             body = self.read_json()
+            validate_request(body, path)
             if path == "/sacred-harp/search":
-                query = str(body.get("query", "")).strip()
-                if not query:
-                    self.send_json(400, {"error": {"message": "query is required"}})
-                    return
-                self.send_json(200, self.runtime.search(query, int(body.get("top_k", 5))))
-                return
-            if path != "/v1/chat/completions":
-                self.send_json(404, {"error": {"message": "Not found"}})
+                query = body["query"].strip()
+                self.send_json(200, self.runtime.search(query, body.get("top_k", 5)))
                 return
             result = self.runtime.complete(body)
             completion_id = f"chatcmpl-{uuid.uuid4().hex}"
@@ -1312,6 +1395,9 @@ class Handler(BaseHTTPRequestHandler):
                     },
                 },
             )
+        except ClientRequestError as exc:
+            self.close_connection = True
+            self.send_json(exc.status, {"error": {"message": str(exc), "type": "invalid_request_error"}})
         except Exception as exc:
             self.send_json(500, {"error": {"message": str(exc), "type": type(exc).__name__}})
 

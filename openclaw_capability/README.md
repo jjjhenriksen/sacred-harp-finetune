@@ -150,3 +150,18 @@ MLX, training a model, or contacting a provider:
 ```sh
 python3 -m unittest discover -s tests -v
 ```
+
+### HTTP request limits
+
+POST requests to `/sacred-harp/search` and `/v1/chat/completions` require one
+nonnegative `Content-Length`, a UTF-8 JSON object, and at most 1 MiB of body
+data. Reads use chunks of at most 64 KiB and a five-second total body deadline;
+chunked transfer encoding is unsupported. Oversized bodies return 413; invalid
+framing, incomplete uploads, malformed JSON, and invalid fields return 400
+with `error.type = invalid_request_error`, before retrieval or generation.
+Search requires a nonempty string `query` and integer `top_k` from 1 through 5.
+Completions require nonempty message objects with supported roles; token limits
+must be positive integers, temperature must be finite and between 0 and 2, and
+`stream` must be a boolean. Valid tool history and streamed responses retain
+their existing protocol. These checks are covered by loopback HTTP fixtures
+with a fake runtime; they do not establish live model or RAG readiness.
