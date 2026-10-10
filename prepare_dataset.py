@@ -229,6 +229,10 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--vault-root", type=Path, default=DEFAULT_VAULT_ROOT)
     parser.add_argument("--output", type=Path, default=Path("data"))
+    parser.add_argument(
+        "--dry-run", action="store_true",
+        help="validate the corpus and print its split manifest without writing output files",
+    )
     args = parser.parse_args()
 
     try:
@@ -253,7 +257,8 @@ def main() -> None:
         "source_song_notes": len(song_records(args.vault_root)),
         "system_prompt": SYSTEM_PROMPT,
     }
-    publish_dataset(args.output, splits, manifest)
+    if not args.dry_run:
+        publish_dataset(args.output, splits, manifest)
     print(json.dumps(manifest, indent=2, ensure_ascii=False))
 
 
