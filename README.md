@@ -36,6 +36,18 @@ preserves other files in the output directory and restores the previous
 directory if promotion fails. The current generated manifest is in
 `data/manifest.json`.
 
+Preview the validated source counts and split manifest before publishing:
+
+```sh
+python3 prepare_dataset.py --vault-root /path/to/generated-vault --dry-run
+```
+
+The preview prints the same JSON manifest as a normal run while leaving all
+output files and directories untouched. Missing or empty corpora still fail.
+Remove `--dry-run` and optionally set `--output /path/to/data` to publish after
+review. This is a preparation check; it does not train a model or establish
+held-out quality.
+
 Split policy `sha1-160-80-10-10-v2` assigns the full 160-bit SHA-1 group hash
 using integer thresholds at 80% and 90%. Every example in a group receives the
 same deterministic split, independent of input order. The manifest records

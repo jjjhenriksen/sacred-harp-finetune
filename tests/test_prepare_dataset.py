@@ -156,6 +156,41 @@ class DatasetPublicationTests(unittest.TestCase):
         self.assertEqual((self.output / 'keep.txt').read_bytes(), self.original['keep.txt'])
         self.assertFalse(list(self.root.glob('.data-stage-*')))
 
+    def dry_run(self, output):
+        return subprocess.run([
+            sys.executable, str(Path(prepare_dataset.__file__)), '--vault-root', str(self.vault),
+            '--output', str(output), '--dry-run',
+        ], capture_output=True, text=True)
+
+    def test_dry_run_matches_published_manifest_without_changing_existing_data(self):
+        self.populate()
+        preview = self.dry_run(self.output)
+        self.assertEqual(preview.returncode, 0, preview.stderr)
+        self.assert_original()
+        self.assertFalse(list(self.root.glob('.data-stage-*')))
+        self.run_main()
+        self.assertEqual(json.loads(preview.stdout), json.loads((self.output / 'manifest.json').read_text()))
+
+    def test_dry_run_does_not_create_output_or_parent_directories(self):
+        self.populate()
+        parent = self.root / 'not-created'
+        preview = self.dry_run(parent / 'data')
+        self.assertEqual(preview.returncode, 0, preview.stderr)
+        self.assertEqual(json.loads(preview.stdout)['total_examples'], 2)
+        self.assertFalse(parent.exists())
+
+    def test_dry_run_still_rejects_missing_or_empty_corpus(self):
+        for empty in (False, True):
+            with self.subTest(empty=empty):
+                if empty:
+                    (self.vault / 'texts').mkdir(parents=True)
+                    (self.vault / 'songs').mkdir()
+                preview = self.dry_run(self.output)
+                self.assertEqual(preview.returncode, 2)
+                self.assertEqual(preview.stdout, '')
+                self.assertIn('error:', preview.stderr)
+                self.assert_original()
+
 
 if __name__ == '__main__':
     unittest.main()
